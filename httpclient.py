@@ -28,6 +28,21 @@ import urllib.parse
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
 
+class HTTPRequest:
+
+    def __init__(self, method="GET", headers={}, path="/", content="") -> None:
+        self.method = method
+        self.headers = headers
+        self.path = path
+        self.content = content
+
+    def build(self):
+        req = f"{self.method} {self.path} HTTP/1.1\r\n"
+        for k, v in self.headers.items():
+            req += f"{k}: {v}\r\n"
+        req += "\r\n"
+        return req + self.content
+
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
         self.code = code
@@ -48,7 +63,12 @@ class HTTPClient(object):
         return int(data.splitlines()[0].split()[1])
 
     def get_headers(self,data):
-        return None
+        headers = {}
+        headers["Connection"] = "close"
+        if data:
+            headers["Content-Length"] = len(data)
+            headers["Content-Type"] = "x-www-url-formencoded"
+        return headers
 
     def get_body(self, data):
         return data[data.find("\r\n\r\n") + 4:]
@@ -71,6 +91,22 @@ class HTTPClient(object):
                 done = not part
         return buffer.decode('utf-8')
     
+    def get_content(self, form_data):
+        content = ""
+        if form_data is not None:
+            for k, v in form_data.items():
+                content += f"{k}={v}&"
+        return content[:-1]
+    
+    def get_path(self, parsed):
+        path = "/"
+        if parsed.path != "":
+            path = parsed.path
+        if parsed.query != "":
+            path += "?" + parsed.query
+        return path
+
+    
     def get_addr(self, parsed):
         parts = parsed.netloc.split(":")
         host = parts[0]
@@ -87,19 +123,15 @@ class HTTPClient(object):
         host, port = self.get_addr(parsed)
         self.connect(host, port)
 
-        path = "/"
-        if parsed.path != "":
-            path = parsed.path
-        if parsed.query != "":
-            path += "?" + parsed.query
-        req = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
-        #print(req)
-        self.sendall(req)
-        #self.socket.shutdown(socket.SHUT_WR)
+        path = self.get_path(parsed)
+        content = self.get_content(args)
+        headers = self.get_headers(content)
+        headers["Host"] = host
+        req = HTTPRequest("GET", headers, path, content)
+        self.sendall(req.build())
 
         resp = self.recvall(self.socket)
         self.close()
-        #print(resp)
         code = self.get_code(resp)
         body = self.get_body(resp)
         return HTTPResponse(code, body)
