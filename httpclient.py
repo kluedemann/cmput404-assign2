@@ -85,12 +85,13 @@ class HTTPClient(object):
         body = ""
         parsed = urllib.parse.urlparse(url)
         host, port = self.get_addr(parsed)
-        addr = socket.gethostbyname(host)
-        self.connect(addr, port)
+        self.connect(host, port)
 
         path = "/"
         if parsed.path != "":
             path = parsed.path
+        if parsed.query != "":
+            path += "?" + parsed.query
         req = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
         #print(req)
         self.sendall(req)
