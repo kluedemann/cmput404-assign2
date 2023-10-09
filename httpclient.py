@@ -65,8 +65,8 @@ class HTTPClient(object):
     def get_headers(self,data):
         headers = {}
         headers["Connection"] = "close"
+        headers["Content-Length"] = len(data)
         if data:
-            headers["Content-Length"] = len(data)
             headers["Content-Type"] = "x-www-url-formencoded"
         return headers
 
@@ -119,19 +119,25 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+
+        # Connect to socket
         parsed = urllib.parse.urlparse(url)
         host, port = self.get_addr(parsed)
         self.connect(host, port)
 
+        # Create request
         path = self.get_path(parsed)
         content = self.get_content(args)
         headers = self.get_headers(content)
         headers["Host"] = host
         req = HTTPRequest("GET", headers, path, content)
-        self.sendall(req.build())
 
+        # Get response
+        self.sendall(req.build())
         resp = self.recvall(self.socket)
         self.close()
+
+        # Parse response
         code = self.get_code(resp)
         body = self.get_body(resp)
         return HTTPResponse(code, body)
@@ -139,6 +145,27 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         code = 500
         body = ""
+
+        # Connect to socket
+        parsed = urllib.parse.urlparse(url)
+        host, port = self.get_addr(parsed)
+        self.connect(host, port)
+
+        # Create request
+        path = self.get_path(parsed)
+        content = self.get_content(args)
+        headers = self.get_headers(content)
+        headers["Host"] = host
+        req = HTTPRequest("POST", headers, path, content)
+        
+        # Get response
+        self.sendall(req.build())
+        resp = self.recvall(self.socket)
+        self.close()
+
+        # Parse response
+        code = self.get_code(resp)
+        body = self.get_body(resp)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
