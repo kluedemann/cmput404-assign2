@@ -29,6 +29,14 @@ def help():
     print("httpclient.py [GET/POST] [URL]\n")
 
 class HTTPRequest:
+    """Represent an HTTP request
+    
+    Params:
+        method - the HTTP method string (e.g. 'GET', 'POST', etc)
+        headers - a dict containing the headers to include in the request
+        path - the path to request
+        content - the string body to include with the request
+    """
 
     def __init__(self, method="GET", headers={}, path="/", content="") -> None:
         self.method = method
@@ -37,6 +45,7 @@ class HTTPRequest:
         self.content = content
 
     def build(self):
+        """Return the request as a string."""
         req = f"{self.method} {self.path} HTTP/1.1\r\n"
         for k, v in self.headers.items():
             req += f"{k}: {v}\r\n"
@@ -60,17 +69,32 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
+        """Return the HTTP status code received.
+        
+        Params:
+            data - the HTTP reponse string received
+        """
         return int(data.splitlines()[0].split()[1])
 
     def get_headers(self,data):
+        """Create the headers to include with the HTTP request.
+        
+        Params:
+            data - the content string to send with the request
+        """
         headers = {}
         headers["Connection"] = "close"
-        headers["Content-Length"] = len(data)
+        headers["Content-Length"] = len(data.encode('utf-8'))
         if data:
-            headers["Content-Type"] = "x-www-url-formencoded"
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
         return headers
 
     def get_body(self, data):
+        """Return the body of the HTTP response.
+        
+        Params:
+            data - the HTTP response string received
+        """
         return data[data.find("\r\n\r\n") + 4:]
     
     def sendall(self, data):
@@ -92,6 +116,11 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
     
     def get_content(self, form_data):
+        """Create the content string from the arguments.
+        
+        Params:
+            form_data - the dict to encode using x-www-form-urlencoding
+        """
         content = ""
         if form_data is not None:
             for k, v in form_data.items():
@@ -99,6 +128,11 @@ class HTTPClient(object):
         return content[:-1]
     
     def get_path(self, parsed):
+        """Return the path to request.
+        
+        Params:
+            parsed - urllib.parse.ParseResult of the URL string
+        """
         path = "/"
         if parsed.path != "":
             path = parsed.path
@@ -108,6 +142,11 @@ class HTTPClient(object):
 
     
     def get_addr(self, parsed):
+        """Return the host and port from the parsed URL.
+        
+        Params:
+            parsed - urllib.parse.ParseResult of the URL string
+        """
         parts = parsed.netloc.split(":")
         host = parts[0]
         if len(parts) > 1:
