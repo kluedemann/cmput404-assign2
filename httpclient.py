@@ -50,7 +50,7 @@ class HTTPRequest:
         for k, v in self.headers.items():
             req += f"{k}: {v}\r\n"
         req += "\r\n"
-        return req + self.content
+        return req + str(self.content)
 
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
@@ -74,7 +74,11 @@ class HTTPClient(object):
         Params:
             data - the HTTP reponse string received
         """
-        return int(data.splitlines()[0].split()[1])
+        try:
+            return int(data.splitlines()[0].split()[1])
+        except:
+            # Invalid response: Could throw error
+            return None
 
     def get_headers(self,data):
         """Create the headers to include with the HTTP request.
@@ -95,7 +99,10 @@ class HTTPClient(object):
         Params:
             data - the HTTP response string received
         """
-        return data[data.find("\r\n\r\n") + 4:]
+        ind = data.find("\r\n\r\n")
+        if ind != -1:
+            return data[ind + 4:]
+        return ""
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
