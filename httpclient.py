@@ -121,11 +121,9 @@ class HTTPClient(object):
         Params:
             form_data - the dict to encode using x-www-form-urlencoding
         """
-        content = ""
         if form_data is not None:
-            for k, v in form_data.items():
-                content += f"{k}={v}&"
-        return content[:-1]
+            return urllib.parse.urlencode(form_data)
+        return ""
     
     def get_path(self, parsed):
         """Return the path to request.
@@ -156,9 +154,6 @@ class HTTPClient(object):
         return host, port
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
-
         # Connect to socket
         parsed = urllib.parse.urlparse(url)
         host, port = self.get_addr(parsed)
@@ -168,7 +163,7 @@ class HTTPClient(object):
         path = self.get_path(parsed)
         content = self.get_content(args)
         headers = self.get_headers(content)
-        headers["Host"] = host
+        headers["Host"] = parsed.netloc
         req = HTTPRequest("GET", headers, path, content)
 
         # Get response
@@ -182,9 +177,6 @@ class HTTPClient(object):
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
-
         # Connect to socket
         parsed = urllib.parse.urlparse(url)
         host, port = self.get_addr(parsed)
@@ -194,7 +186,7 @@ class HTTPClient(object):
         path = self.get_path(parsed)
         content = self.get_content(args)
         headers = self.get_headers(content)
-        headers["Host"] = host
+        headers["Host"] = parsed.netloc
         req = HTTPRequest("POST", headers, path, content)
         
         # Get response
